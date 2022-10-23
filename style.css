@@ -13,9 +13,12 @@ html, body {
 
   height: min-content;
   max-height: 100%;
+
   overflow: hidden;
 }
 
 canvas {
+  position: absolute;
+  top: 0;
   display: block;
 }
