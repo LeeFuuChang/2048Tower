@@ -10,9 +10,23 @@ class Block{
         this.updateConfigurations();
     }
 
+    setNumber(n){
+        this.number = n;
+        this.updateConfigurations();
+    }
+
+    pointCollided(x, y){
+        return (
+            this.pixelPos.x <= x && 
+            this.pixelPos.y <= y &&
+            this.pixelPos.x + blockSize >= x &&
+            this.pixelPos.y + blockSize >= y
+        )
+    }
+
     calculatePositions(){
-        let boardx = (windowWidth-boardWidth)/2;
-        let boardy = (windowHeight-boardHeight)/2;
+        let boardx = (canvasWidth-boardWidth)/2;
+        let boardy = (canvasHeight-boardHeight)/2;
         let blockSpace = (blockSize/2)/(max(columns, rows)-1);
         this.pixelPos.x = boardx + blockSize/4 + blockSize*this.boardPos.x + blockSpace*this.boardPos.x;
         this.pixelPos.y = boardy + blockSize/4 + blockSize*this.boardPos.y + blockSpace*this.boardPos.y;
@@ -21,17 +35,19 @@ class Block{
     }
 
     updateConfigurations(){
-        for(let type of typesOfBlocks){
-            if(this.number === type.number){
-                this.bg = type.bg;
-                this.fg = type.fg;
-                this.shootDelay = type.shootDelay;
-                return;
-            }
+        let type;
+        for(type of typesOfBlocks) if(this.number === type.number) break;
+        if(type){
+            this.fontSizeMultiplier = type.fontSizeMultiplier;
+            this.bg = type.bg;
+            this.fg = type.fg;
+            this.shootDelay = type.shootDelay;
+        }else{
+            this.fontSizeMultiplier = typesOfBlocks[0].fontSizeMultiplier;
+            this.bg = typesOfBlocks[0].bg;
+            this.fg = typesOfBlocks[0].fg;
+            this.shootDelay = type.shootDelay;
         }
-        this.bg = typesOfBlocks[0].bg;
-        this.fg = typesOfBlocks[0].fg;
-        this.shootDelay = type.shootDelay;
     }
 
     isMoving(){
@@ -62,11 +78,21 @@ class Block{
         );
         fill(this.fg);
         textAlign(CENTER, CENTER);
-        textSize(blockSize/2);
+        textSize(blockSize*this.fontSizeMultiplier);
         text(
             this.number, 
             this.pixelPos.x+(blockSize/2), 
             this.pixelPos.y+(blockSize/2)
+        );
+    }
+
+    showBorder(color, weight=4){
+        stroke(color);
+        strokeWeight(weight);
+        fill(0, 0, 0, 0);
+        rect(
+            this.pixelPos.x+weight/2, this.pixelPos.y+weight/2,
+            blockSize-weight, blockSize-weight, (blockSize-weight)/8
         );
     }
 }

@@ -4,6 +4,10 @@ class Player {
     }
 
     reset(){
+        this.waiting = true;
+
+        this.swappingArea = new SwappingArea();
+
         this.health = playerMaxHealth;
 
         this.empty = [];
@@ -15,8 +19,10 @@ class Player {
         }
         this.blocks = [];
         this.bullets = [];
-        this.enemies = [];
+        this.enemyWave = null;
+
         this.unlocked = 2;
+        this.damageDealt = 0;
 
         this.moveStack = [];
         this.movingStage = 0;
@@ -36,8 +42,13 @@ class Player {
         for(let block of this.blocks) this.empty[block.boardPos.y][block.boardPos.x] = false;
     }
 
-    isDead(){
-        if(rows*columns - this.blocks.length !== 0) return 1;
+    checkWon(){
+        return this.unlocked === typesOfBlocks.reduce((a, b)=>a.number>b.number?a:b).number;
+    }
+
+    checkDead(){
+        if(this.health <= 0) return true;
+        if(rows*columns - this.blocks.length !== 0) return false;
         for(let i=0; i<rows*columns; i++){
             for(let j=i; j<rows*columns; j++){
                 if(this.blocks[i].number !== this.blocks[j].number) continue;
@@ -52,15 +63,16 @@ class Player {
         return true;
     }
 
-    addBlock(sx, sy){
+    addBlock(sx, sy, number){
         if(rows*columns - this.blocks.length === 0) return;
         let x = sx!==undefined?sx:Math.floor(Math.random()*columns);
         let y = sy!==undefined?sy:Math.floor(Math.random()*rows);
+        let n = number!==undefined?number:2;
         if(this.empty[y][x]){
-            this.blocks.push(new Block(x, y, 2));
+            this.blocks.push(new Block(x, y, n));
             this.empty[y][x] = false;
         }else{
-            this.addBlock();
+            this.addBlock(sx, sy, number);
         }
     }
 
@@ -164,60 +176,114 @@ class Player {
         }
     }
 
-    update(){
-        if(this.movingStage === 0){
-            if(this.moveStack.length !== 0){
-                this.movingDirection = this.moveStack[0];
-                this.addCollidedBlocks();
-                this.preCalculateMove();
-                this.movingStage = 1;
-            }
-        }else if(this.movingStage === 1 && this.doneMoving()){
-            this.moveStack = this.moveStack.slice(1);
-            this.movingStage = 0;
-            this.checkEmptyPositions();
-            this.addBlock();
-            this.addBlock();
-            this.enemies.push(new Enemy(0.1, this.unlocked*(rows+columns), enemyDamage));
-        }
-
-        this.enemies.sort((a, b)=>(b.progress-a.progress));
-        for(let i=0; i<this.enemies.length; i++){
-            if(this.enemies[i].health <= 0){
-                this.enemies.splice(i, 1);
-                i--; continue;
-            }
-            this.enemies[i].update();
-            if(this.enemies[i].progress >= 100){
-                this.health -= this.enemies[i].damage;
-                console.log(this.health);
-                this.enemies.splice(i, 1);
-                i--; continue;
-            }
-        }
-
+    pressedAt(mx, my){
+        let clicked;
         for(let block of this.blocks){
-            block.update();
-            if(block.shootCounter > block.shootDelay){
-                block.shootCounter = 0;
-                this.bullets.push(new Bullet(bulletSpeed, block));
-            }
+            if(!block.pointCollided(mx, my)) continue;
+            clicked = block;
         }
-
-        for(let i=0; i<this.bullets.length; i++){
-            this.bullets[i].setTarget(this.enemies[0]);
-            this.bullets[i].update();
-            if(this.bullets[i].getDistanceToTarget() < this.bullets[i].speed){
-                this.bullets[i].dealDamage();
-                this.bullets.splice(i, 1);
-                i--; continue;
-            }
+        if(!clicked) return;
+        if(this.swappingArea.active && this.swappingArea.toggledNumber !== 0){
+            clicked.setNumber(this.swappingArea.toggledNumber);
+            this.swappingArea.deactivate();
         }
     }
 
+    pointOnBoard(px, py){
+        let x = (canvasWidth-boardWidth)/2;
+        let y = (canvasHeight-boardHeight)/2;
+        return (
+            px >= x && py >= y &&
+            px <= x+boardWidth && 
+            py <= y+boardHeight
+        )
+    }
+
+    pointOnSwappingArea(px, py){
+        return this.swappingArea.pointOnSwappingArea(px, py);
+    }
+
+    sendEnemyWave(){
+        let amount = 20, delay = 30;
+        let speed = enemySpeed;
+        this.enemyWave = new EnemyWave(this, 20, 30);
+        let attackDuration = 100/speed + amount*delay;
+        let type = typesOfBlocks[0];
+        for(type of typesOfBlocks) if(this.unlocked === type.number) break;
+        let totalEnemyHealth = (attackDuration/type.shootDelay)*type.number;
+        let enemyHealthRD = Math.random()+1;
+        totalEnemyHealth *= enemyHealthRD*2;
+        let enemyHealth = Math.floor(totalEnemyHealth/amount);
+        this.enemyWave.setEnemyHealth(enemyHealth);
+    }
+
+    update(){
+        if(!this.swappingArea.active){
+            if(this.movingStage === 0){
+                if(this.moveStack.length !== 0){
+                    if(this.waiting){
+                        this.sendEnemyWave();
+                        this.waiting = false;
+                    }
+                    this.movingDirection = this.moveStack[0];
+                    this.addCollidedBlocks();
+                    this.preCalculateMove();
+                    this.movingStage = 1;
+                }
+            }else if(this.movingStage === 1 && this.doneMoving()){
+                this.moveStack = this.moveStack.slice(1);
+                this.movingStage = 0;
+                this.checkEmptyPositions();
+                this.addBlock();
+                this.addBlock();
+            }
+
+            if(this.enemyWave) this.enemyWave.update();
+
+            for(let block of this.blocks){
+                block.update();
+                if(block.shootCounter > block.shootDelay){
+                    block.shootCounter = 0;
+                    this.bullets.push(new Bullet(bulletSpeed, block));
+                }
+            }
+
+            if(this.enemyWave){
+                for(let i=0; i<this.bullets.length; i++){
+                    if(this.enemyWave.isCleared()){
+                        this.bullets.splice(0, this.bullets.length);
+                        break;
+                    }
+                    this.bullets[i].setTarget(this.enemyWave.getFirst());
+                    this.bullets[i].update();
+                    if(this.bullets[i].getDistanceToTarget() < this.bullets[i].speed){
+                        this.bullets[i].dealDamage();
+                        this.damageDealt += this.bullets[i].damage;
+                        this.bullets.splice(i, 1);
+                        i--; continue;
+                    }
+                }
+                if(this.enemyWave.isCleared()){
+                    this.enemyWave = null;
+                    this.swappingArea.activate();
+                    this.waiting = true;
+                }
+            } else this.bullets.splice(0, this.bullets.length);
+        }else{
+            this.moveStack = [];
+            this.movingStage = 0;
+            this.bullets = [];
+            this.enemyWave = null;
+        }
+
+        this.swappingArea.setUnlocked(this.unlocked);
+
+        if(this.checkDead() || this.checkWon()) return GAME_ENDED_CODE;
+    }
+
     draw(){
-        let x = (windowWidth-boardWidth)/2;
-        let y = (windowHeight-boardHeight)/2;
+        let x = (canvasWidth-boardWidth)/2;
+        let y = (canvasHeight-boardHeight)/2;
         let pathSpace = blockSize/2;
         let thickness = pathSpace/10;
 
@@ -231,9 +297,32 @@ class Player {
 
         // board
         fill(boardBackgroundColor);
-        rect(x, y, boardWidth, boardHeight, blockSize/4);
-        for(let block of this.blocks) block.draw();
-        for(let enemy of this.enemies) enemy.draw();
+        rect(x, y, boardWidth, boardHeight, blockSize/6);
+        for(let block of this.blocks){
+            block.draw();
+            if(this.swappingArea.active){
+                block.showBorder([57, 57, 57], 4);
+            }
+        }
+
+        if(this.enemyWave) this.enemyWave.draw();
+
         for(let bullet of this.bullets) bullet.draw();
+
+        // health ui
+        noStroke();
+        let barWidth = min(canvasWidth, canvasHeight);
+        let barHeight = blockSize/3;
+        fill(healthBackgroundColor);
+        rect((canvasWidth-barWidth)/2, 0, barWidth, barHeight);
+        fill(healthBarColor);
+        rect((canvasWidth-barWidth)/2, 0, barWidth*(this.health/playerMaxHealth), barHeight);
+        fill(healthTextColor);
+        textAlign(CENTER, CENTER);
+        textSize(barHeight*0.8);
+        text(this.health, barWidth/2, barHeight/2);
+
+        // swapping area ui
+        this.swappingArea.draw()
     }
 }
