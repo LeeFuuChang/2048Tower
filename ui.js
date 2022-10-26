@@ -4,9 +4,15 @@ class SwappingArea {
         this.prevScrollx = 0;
         this.scrollx = 0;
         this.toggledNumber = 0;
-        this.unlocked = typesOfBlocks.reduce(function(a, b) {
+        this.minNumber = typesOfBlocks.reduce(function(a, b) {
             return a.number < b.number ? a : b;
-        });
+        }).number;
+        this.unlocked = this.minNumber;
+        this.blockTypes = [...Array(typesOfBlocks.length)];
+        for(let type of typesOfBlocks){
+            let index = log(type.number, this.minNumber)-1;
+            this.blockTypes[index] = new Block(index, 0, type.number);
+        }
     }
 
     pressedAt(mx, my){
@@ -82,36 +88,14 @@ class SwappingArea {
             blockSize/6, blockSize/6, 0, 0
         );
 
-        typesOfBlocks.sort((a, b)=>a.number - b.number);
-        for(let i=0; i<typesOfBlocks.length; i++){
-            let b_r = typesOfBlocks[i].bg[0];
-            let b_g = typesOfBlocks[i].bg[1];
-            let b_b = typesOfBlocks[i].bg[2];
+        for(let i=0; i<this.blockTypes.length; i++){
+            this.blockTypes[i].pixelPos.x = -this.scrollx + (canvasWidth-areaWidth)/2 + padding*(i+1) + blockSize*i;
+            this.blockTypes[i].pixelPos.y = canvasHeight - (padding + blockSize);
+            this.blockTypes[i].draw(1);
 
-            let f_r = typesOfBlocks[i].fg[0];
-            let f_g = typesOfBlocks[i].fg[1];
-            let f_b = typesOfBlocks[i].fg[2];
+            this.blockTypes[i].disabled = this.blockTypes[i].number > this.unlocked;
 
-            let a = 50 + 205*(typesOfBlocks[i].number <= this.unlocked);
-
-            noStroke();
-
-            fill(b_r, b_g, b_b, a);
-            rect(
-                -this.scrollx + (canvasWidth-areaWidth)/2 + padding*(i+1) + blockSize*i, 
-                canvasHeight - (padding + blockSize),
-                blockSize, blockSize, blockSize/8
-            );
-            fill(f_r, f_g, f_b, a);
-            textAlign(CENTER, CENTER);
-            textSize(blockSize*typesOfBlocks[i].fontSizeMultiplier);
-            text(
-                typesOfBlocks[i].number, 
-                -this.scrollx + (canvasWidth-areaWidth)/2 + padding*(i+1) + blockSize*(i+0.5), 
-                canvasHeight - (padding + blockSize) + (blockSize/2)
-            );
-
-            if(typesOfBlocks[i].number === this.toggledNumber && this.active){
+            if(this.blockTypes[i].number === this.toggledNumber && this.active){
                 fill(0, 0);
                 stroke(swappingAreaToggledColor);
                 strokeWeight(toggledStrokeWeight);
@@ -152,11 +136,23 @@ class EntryUI {
         this.fakePlayer = new Player();
         this.fakePlayer.sendEnemyWave();
 
+        this.largestBlock = new Block(0, 0,
+            typesOfBlocks.reduce((a, b)=>a.number>b.number?a:b).number
+        );
+
         this.gameStart = false;
     }
 
     pressedAt(mx, my){
-        return GAME_START_CODE;
+        let btnX = canvasWidth/2 - blockSize;
+        let btnY = canvasHeight/2 + blockSize*0.5;
+        let btnW = blockSize*2;
+        let btnH = blockSize*0.75;
+        if(
+            btnX <= mx && btnY <= my &&
+            btnX + btnW >= mx &&
+            btnY + btnH >= my
+        ) return GAME_START_CODE;
     }
 
     update(mx, my){
@@ -164,6 +160,9 @@ class EntryUI {
         this.fakePlayer.enemyWave.amount = 100;
         this.fakePlayer.enemyWave.invulnerable = true;
         this.fakePlayer.health = 100;
+
+        this.largestBlock.pixelPos.x = (canvasWidth - blockSize)/2;
+        this.largestBlock.pixelPos.y = canvasHeight/2 - blockSize;
     }
 
     draw(){
@@ -171,6 +170,32 @@ class EntryUI {
         noStroke();
         fill(0, 0, 0, 127);
         rect(0, 0, canvasWidth, canvasHeight);
+
+        this.largestBlock.draw(3, [60, 60, 60, 120, 4, 8]);
+
+        // start button
+        fill([60, 60, 60, 120]);
+        rect(
+            canvasWidth/2 - blockSize - 3,
+            canvasHeight/2 + blockSize*0.5 + 6,
+            blockSize*2 + 6, blockSize*0.75, blockSize*0.15
+        );
+        fill(continueButtonColor);
+        rect(
+            canvasWidth/2 - blockSize,
+            canvasHeight/2 + blockSize*0.5,
+            blockSize*2, blockSize*0.75, blockSize*0.15
+        );
+        stroke([255, 255, 255]);
+        strokeWeight(1.5);
+        textSize(blockSize*0.75*0.5);
+        textAlign(CENTER, CENTER);
+        fill([255, 255, 255]);
+        text(
+            "進入遊戲", 
+            canvasWidth/2,
+            canvasHeight/2 + blockSize*0.875,
+        );
     }
 }
 
@@ -196,9 +221,7 @@ class ResultUI {
             nextGameButtonX <= my && nextGameButtonY <= my &&
             nextGameButtonX + nextGameButtonW >= mx &&
             nextGameButtonY + nextGameButtonH >= my
-        ){
-            return GAME_START_CODE;
-        }
+        ) return GAME_START_CODE;
     }
 
     update(){}
@@ -253,7 +276,7 @@ class ResultUI {
         );
         this.bestBlock.pixelPos.x = (canvasWidth-blockSize)/2;
         this.bestBlock.pixelPos.y = (canvasHeight-cardHeight)/2;
-        this.bestBlock.draw(1.75, true);
+        this.bestBlock.draw(1.75, [60, 60, 60, 80, 4, 8]);
 
         let lineHeight = blockSize*0.3, by = (canvasHeight-cardHeight)/2 - weight + cardHeight/5*2 - blockSize/3;
         fill(0, 0, 0, 100);

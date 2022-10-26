@@ -6,6 +6,7 @@ class Block{
         this.pixelPosTo = new Vec2(0, 0);
         this.calculatePositions();
         this.number = number;
+        this.disabled = false;
         this.shootCounter = 0;
         this.updateConfigurations();
     }
@@ -68,22 +69,22 @@ class Block{
         this.updateConfigurations();
     }
 
-    draw(zoom=1, shadow=false){
-        if(shadow){
-            fill(100, 100, 100, 100);
-            rect(
-                this.pixelPos.x-((zoom-1)*blockSize/2) - 5, 
-                this.pixelPos.y-((zoom-1)*blockSize/2) + 10,
-                blockSize*zoom + 10, blockSize*zoom, blockSize*zoom/6
-            );
-        }
+    draw(zoom=1, shadow=[100, 100, 100, 100, 4, 8]){
+        let a = 50 + 205*!this.disabled;
+
         noStroke();
-        fill(this.bg);
+        fill(shadow[0], shadow[1], shadow[2], shadow[3]);
+        rect(
+            this.pixelPos.x-((zoom-1)*blockSize/2) - shadow[4], 
+            this.pixelPos.y-((zoom-1)*blockSize/2) + shadow[5],
+            blockSize*zoom + shadow[4]*2, blockSize*zoom, (blockSize*zoom + shadow[4]*2)/8
+        );
+        fill(this.bg[0], this.bg[1], this.bg[2], a);
         rect(
             this.pixelPos.x-((zoom-1)*blockSize/2), this.pixelPos.y-((zoom-1)*blockSize/2),
             blockSize*zoom, blockSize*zoom, blockSize*zoom/8
         );
-        fill(this.fg);
+        fill(this.fg[0], this.fg[1], this.fg[2], a);
         textAlign(CENTER, CENTER);
         textSize(blockSize*zoom*this.fontSizeMultiplier);
         text(
