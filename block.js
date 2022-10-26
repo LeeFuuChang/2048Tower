@@ -66,19 +66,26 @@ class Block{
             this.calculatePositions();
         }
         this.updateConfigurations();
-        this.shootCounter += 1;
     }
 
-    draw(){
+    draw(zoom=1, shadow=false){
+        if(shadow){
+            fill(100, 100, 100, 100);
+            rect(
+                this.pixelPos.x-((zoom-1)*blockSize/2) - 5, 
+                this.pixelPos.y-((zoom-1)*blockSize/2) + 10,
+                blockSize*zoom + 10, blockSize*zoom, blockSize*zoom/6
+            );
+        }
         noStroke();
         fill(this.bg);
         rect(
-            this.pixelPos.x, this.pixelPos.y,
-            blockSize, blockSize, blockSize/8
+            this.pixelPos.x-((zoom-1)*blockSize/2), this.pixelPos.y-((zoom-1)*blockSize/2),
+            blockSize*zoom, blockSize*zoom, blockSize*zoom/8
         );
         fill(this.fg);
         textAlign(CENTER, CENTER);
-        textSize(blockSize*this.fontSizeMultiplier);
+        textSize(blockSize*zoom*this.fontSizeMultiplier);
         text(
             this.number, 
             this.pixelPos.x+(blockSize/2), 

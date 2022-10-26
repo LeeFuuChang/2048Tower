@@ -63,7 +63,12 @@ class EnemyWave {
     }
 
     getFirst(){
-        return this.enemies[0];
+        for(let i=0; i<this.enemies.length; i++){
+            if(this.enemies[i].health > 0){
+                this.enemies.splice(0, i);
+                return this.enemies[0];
+            }
+        }
     }
 
     update(){

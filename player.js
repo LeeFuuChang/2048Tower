@@ -21,8 +21,14 @@ class Player {
         this.bullets = [];
         this.enemyWave = null;
 
-        this.unlocked = 2;
+        this.unlocked = typesOfBlocks.reduce((a, b)=>a.number<b.number?a:b).number;
         this.damageDealt = 0;
+        this.enemyKilled = 0;
+        this.addedNumber = 0;
+        this.blockDamageDealt = [...Array(typesOfBlocks.length)];
+
+        this.minNumber = this.unlocked;
+        for(let type of typesOfBlocks) this.blockDamageDealt[log(type.number, this.minNumber)-1] = 0;
 
         this.moveStack = [];
         this.movingStage = 0;
@@ -30,6 +36,18 @@ class Player {
 
         this.addBlock();
         this.addBlock();
+    }
+
+    getResult(){
+        return {
+            enemyKilled: this.enemyKilled,
+            damageDealt: this.damageDealt,
+            blockDamage: this.blockDamageDealt,
+            minNumber  : this.minNumber,
+            maxNumber  : this.unlocked,
+            addedNumber: this.addedNumber,
+            victory    : this.checkWon()
+        }
     }
 
     checkEmptyPositions(){
@@ -88,6 +106,7 @@ class Player {
                     for(let c=rcount-1; c>0; c--){
                         if(tempRows[r][c].number === tempRows[r][c-1].number){
                             tempRows[r][c].number *= 2;
+                            this.addedNumber += tempRows[r][c].number;
                             this.unlocked = max(this.unlocked, tempRows[r][c].number);
                             this.blocks.splice(this.blocks.indexOf(tempRows[r][c-1]), 1);
                             c--;
@@ -97,6 +116,7 @@ class Player {
                     for(let c=0; c<rcount-1; c++){
                         if(tempRows[r][c].number === tempRows[r][c+1].number){
                             tempRows[r][c].number *= 2;
+                            this.addedNumber += tempRows[r][c].number;
                             this.unlocked = max(this.unlocked, tempRows[r][c].number);
                             this.blocks.splice(this.blocks.indexOf(tempRows[r][c+1]), 1);
                             c++;
@@ -115,6 +135,7 @@ class Player {
                     for(let r=ccount-1; r>0; r--){
                         if(tempCols[c][r].number === tempCols[c][r-1].number){
                             tempCols[c][r].number *= 2;
+                            this.addedNumber += tempCols[c][r].number;
                             this.unlocked = max(this.unlocked, tempCols[c][r].number);
                             this.blocks.splice(this.blocks.indexOf(tempCols[c][r-1]), 1);
                             r--;
@@ -124,6 +145,7 @@ class Player {
                     for(let r=0; r<ccount-1; r++){
                         if(tempCols[c][r].number === tempCols[c][r+1].number){
                             tempCols[c][r].number *= 2;
+                            this.addedNumber += tempCols[c][r].number;
                             this.unlocked = max(this.unlocked, tempCols[c][r].number);
                             this.blocks.splice(this.blocks.indexOf(tempCols[c][r+1]), 1);
                             r++;
@@ -218,7 +240,7 @@ class Player {
     }
 
     update(){
-        if(!this.swappingArea.active){
+        if(!this.swappingArea.active && !(this.checkDead()||this.checkWon())){
             if(this.movingStage === 0){
                 if(this.moveStack.length !== 0){
                     if(this.waiting){
@@ -242,6 +264,7 @@ class Player {
 
             for(let block of this.blocks){
                 block.update();
+                block.shootCounter += 1;
                 if(block.shootCounter > block.shootDelay){
                     block.shootCounter = 0;
                     this.bullets.push(new Bullet(bulletSpeed, block));
@@ -257,8 +280,11 @@ class Player {
                     this.bullets[i].setTarget(this.enemyWave.getFirst());
                     this.bullets[i].update();
                     if(this.bullets[i].getDistanceToTarget() < this.bullets[i].speed){
-                        this.bullets[i].dealDamage();
-                        this.damageDealt += this.bullets[i].damage;
+                        if(this.bullets[i].dealDamage()){
+                            this.enemyKilled += (this.bullets[i].target.health <= 0);
+                            this.damageDealt += this.bullets[i].damage;
+                            this.blockDamageDealt[log(this.bullets[i].parentNumber, this.minNumber)-1] += this.bullets[i].damage;
+                        }
                         this.bullets.splice(i, 1);
                         i--; continue;
                     }
@@ -274,6 +300,7 @@ class Player {
             this.movingStage = 0;
             this.bullets = [];
             this.enemyWave = null;
+            for(let block of this.blocks) block.update();
         }
 
         this.swappingArea.setUnlocked(this.unlocked);

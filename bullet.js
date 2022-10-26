@@ -5,6 +5,7 @@ class Bullet{
         this.bdc = parent.fg;
         this.size = blockSize/10;
         this.damage = parent.number;
+        this.parentNumber = parent.number;
         this.target = undefined;
         this.pixelPos = new Vec2(
             parent.pixelPos.x+blockSize/2, 
@@ -29,6 +30,7 @@ class Bullet{
     dealDamage(){
         if(!this.target) return;
         this.target.health -= this.damage;
+        return true;
     }
 
     update(){

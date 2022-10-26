@@ -9,6 +9,16 @@ const bulletSpeed = 50;
 const enemyDamage = 10;
 const enemySpeed = 0.1;
 
+const bestBlockBackgroundColor = [234, 234, 11];
+const resultBannerColor = [204, 18, 1];
+const victoryTextColor = [253, 255, 11];
+const victoryStrokeColor = [106, 7, 4];
+const gameOverTextColor = [239, 34, 7];
+const gameOverStrokeColor = [76, 6, 5];
+const continueButtonColor = [15, 210, 70];
+const resultCardTextColor = [136, 254, 18];
+const resultCardStrokeColor = [95, 142, 213];
+const resultCardBackgroundColor = [62, 96, 140];
 const healthBackgroundColor = [105, 105, 105];
 const healthTextColor = [255, 255, 255];
 const healthBarColor = [63, 118, 29];
@@ -52,10 +62,10 @@ function setup() {
   createCanvas(canvasWidth, windowHeight);
 
   frameRate(60);
-
-  currentInterface = new EntryUI();
-
+  
   player = new Player();
+
+  currentInterface = new EntryUI(player);
 }
 
 function gameStart(){
@@ -64,7 +74,7 @@ function gameStart(){
 }
 
 function gameEnded(){
-  currentInterface = new EntryUI();
+  currentInterface = new ResultUI(player);
 }
 
 function draw() {
@@ -168,6 +178,10 @@ function keyReleased(event) {
   }
 }
 
-function dist(x1, y1, x2, y2){
+const dist = (x1, y1, x2, y2)=>{
   return Math.sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+}
+
+const log = (val, base)=>{
+  return Math.log(val) / (base ? Math.log(base) : 1);
 }
