@@ -346,3 +346,38 @@ class ResultUI {
         );
     }
 }
+
+
+
+class HintUI {
+    constructor(text, duration, gap, blinks){
+        this.t = 0; this.a = 255;
+        this.text = text;
+        this.gap = gap;
+        this.duration = duration;
+        this.blinks = blinks;
+    }
+
+    update(){
+        this.t += 1;
+        if(this.blinks){
+            if(this.t <= this.blinks * this.gap){
+                this.a = Math.abs( (Math.floor(this.t/this.gap + 1)%2)*255 - ((this.t%this.gap) / this.gap)*255 );
+            }else this.a = 255;
+        }else{
+            this.a = Math.abs( (Math.floor(this.t/this.gap + 1)%2)*255 - ((this.t%this.gap) / this.gap)*255 );
+        }
+        if(this.duration){
+            return (this.t >= this.duration);
+        }
+    }
+
+    draw(){
+        let areaWidth = min(canvasWidth, canvasHeight);
+        let areaHeight = blockSize;
+        fill([128, 128, 128, this.a]);
+        textAlign(CENTER, CENTER);
+        textSize(areaHeight*0.4);
+        text(this.text, areaWidth/2, (blockSize/3 + (canvasHeight-boardHeight-blockSize)/2)/2);
+    }
+}

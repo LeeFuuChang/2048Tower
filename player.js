@@ -10,6 +10,8 @@ class Player {
 
         this.health = playerMaxHealth;
 
+        this.hint = null;
+
         this.empty = [];
         for(let r=0; r<rows; r++){
             this.empty.push([]);
@@ -20,6 +22,8 @@ class Player {
         this.blocks = [];
         this.bullets = [];
         this.enemyWave = null;
+
+        this.enemyHealthPower = 1;
 
         this.unlocked = typesOfBlocks.reduce((a, b)=>a.number<b.number?a:b).number;
         this.damageDealt = 0;
@@ -208,6 +212,7 @@ class Player {
         if(this.swappingArea.active && this.swappingArea.toggledNumber !== 0){
             clicked.setNumber(this.swappingArea.toggledNumber);
             this.swappingArea.deactivate();
+            this.hint = null;
         }
     }
 
@@ -228,11 +233,12 @@ class Player {
     sendEnemyWave(){
         let amount = 20, delay = 30;
         let speed = enemySpeed;
-        this.enemyWave = new EnemyWave(this, 20, 30);
+        this.enemyWave = new EnemyWave(this, amount, delay);
         let attackDuration = 100/speed + amount*delay;
-        let type = typesOfBlocks[0];
-        for(type of typesOfBlocks) if(this.unlocked === type.number) break;
-        let totalEnemyHealth = (attackDuration/type.shootDelay)*type.number;
+        let type = typesOfBlocks.reduce((a, b)=> a.number === this.unlocked?a:b);
+        this.enemyHealthPower = max(this.enemyHealthPower + enemyHealthIncreaseRate, log(this.unlocked, this.minNumber));
+        let multiplier = Math.pow(this.minNumber, this.enemyHealthPower);
+        let totalEnemyHealth = (attackDuration/type.shootDelay)*multiplier;
         let enemyHealthRD = Math.random()+1;
         totalEnemyHealth *= enemyHealthRD*2;
         let enemyHealth = Math.floor(totalEnemyHealth/amount);
@@ -291,6 +297,7 @@ class Player {
                 }
                 if(this.enemyWave.isCleared()){
                     this.enemyWave = null;
+                    this.hint = new HintUI("卡住了？選一個格子換掉吧 :）", 0, 60, 0);
                     this.swappingArea.activate();
                     this.waiting = true;
                 }
@@ -304,6 +311,8 @@ class Player {
         }
 
         this.swappingArea.setUnlocked(this.unlocked);
+
+        if(this.hint && this.hint.update()) this.hint = null;
 
         if(this.checkDead() || this.checkWon()) return GAME_ENDED_CODE;
     }
@@ -351,5 +360,8 @@ class Player {
 
         // swapping area ui
         this.swappingArea.draw()
+
+        // hint
+        if(this.hint) this.hint.draw();
     }
 }

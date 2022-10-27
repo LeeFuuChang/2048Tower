@@ -6,6 +6,7 @@ const playerMaxHealth = 100;
 const miniumSwipeDistance = 20;
 const blockSpeed = 50;
 const bulletSpeed = 50;
+const enemyHealthIncreaseRate = 0.5;
 const enemyDamage = 10;
 const enemySpeed = 0.1;
 
