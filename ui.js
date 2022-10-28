@@ -13,6 +13,7 @@ class SwappingArea {
             let index = log(type.number, this.minNumber)-1;
             this.blockTypes[index] = new Block(index, 0, type.number);
         }
+        this.blockTypes.splice(this.blockTypes.length-1, 1);
     }
 
     pressedAt(mx, my){

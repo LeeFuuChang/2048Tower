@@ -89,7 +89,7 @@ class Player {
         if(rows*columns - this.blocks.length === 0) return;
         let x = sx!==undefined?sx:Math.floor(Math.random()*columns);
         let y = sy!==undefined?sy:Math.floor(Math.random()*rows);
-        let n = number!==undefined?number:2;
+        let n = number!==undefined?number:(this.minNumber*((Math.floor(Math.random() * 8)===1)+1));
         if(this.empty[y][x]){
             this.blocks.push(new Block(x, y, n));
             this.empty[y][x] = false;
@@ -208,12 +208,13 @@ class Player {
             if(!block.pointCollided(mx, my)) continue;
             clicked = block;
         }
-        if(!clicked) return;
+        if(!clicked || clicked.disabled) return;
         if(this.swappingArea.active && this.swappingArea.toggledNumber !== 0){
             clicked.setNumber(this.swappingArea.toggledNumber);
             this.swappingArea.deactivate();
             this.hint = null;
         }
+        for(let block of this.blocks) block.disabled = false;
     }
 
     pointOnBoard(px, py){
@@ -307,7 +308,10 @@ class Player {
             this.movingStage = 0;
             this.bullets = [];
             this.enemyWave = null;
-            for(let block of this.blocks) block.update();
+            for(let block of this.blocks){
+                block.disabled = this.swappingArea.toggledNumber === block.number;
+                block.update();
+            }
         }
 
         this.swappingArea.setUnlocked(this.unlocked);

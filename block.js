@@ -95,7 +95,8 @@ class Block{
     }
 
     showBorder(color, weight=4){
-        stroke(color);
+        let a = 50 + 205*!this.disabled;
+        stroke([color[0], color[1], color[2], a]);
         strokeWeight(weight);
         fill(0, 0, 0, 0);
         rect(
