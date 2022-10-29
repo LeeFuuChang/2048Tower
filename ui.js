@@ -16,7 +16,6 @@ class SwappingArea {
         this.unlocked = this.minNumber;
         this.blockTypes = [...Array(typesOfBlocks.length)];
         for(let type of typesOfBlocks){
-            console.log(type.number, this.minNumber)
             let index = log(type.number, this.minNumber)-1;
             this.blockTypes[index] = new Block(index, 0, type.number);
         }
