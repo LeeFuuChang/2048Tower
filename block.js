@@ -40,14 +40,16 @@ class Block{
         for(type of typesOfBlocks) if(this.number === type.number) break;
         if(type){
             this.fontSizeMultiplier = type.fontSizeMultiplier;
-            this.bg = type.bg;
-            this.fg = type.fg;
+            this.bg = color(type.bg);
+            this.fg = color(type.fg);
+            this.isGoal = type.isGoal;
             this.shootDelay = type.shootDelay;
         }else{
             this.fontSizeMultiplier = typesOfBlocks[0].fontSizeMultiplier;
-            this.bg = typesOfBlocks[0].bg;
-            this.fg = typesOfBlocks[0].fg;
-            this.shootDelay = type.shootDelay;
+            this.bg = color(typesOfBlocks[0].bg);
+            this.fg = color(typesOfBlocks[0].fg);
+            this.isGoal = typesOfBlocks[0].isGoal;
+            this.shootDelay = typesOfBlocks[0].shootDelay;
         }
     }
 
@@ -79,12 +81,14 @@ class Block{
             this.pixelPos.y-((zoom-1)*blockSize/2) + shadow[5],
             blockSize*zoom + shadow[4]*2, blockSize*zoom, (blockSize*zoom + shadow[4]*2)/8
         );
-        fill(this.bg[0], this.bg[1], this.bg[2], a);
+        this.bg.setAlpha(a);
+        fill(this.bg);
         rect(
             this.pixelPos.x-((zoom-1)*blockSize/2), this.pixelPos.y-((zoom-1)*blockSize/2),
             blockSize*zoom, blockSize*zoom, blockSize*zoom/8
         );
-        fill(this.fg[0], this.fg[1], this.fg[2], a);
+        this.fg.setAlpha(a);
+        fill(this.fg);
         textAlign(CENTER, CENTER);
         textSize(blockSize*zoom*this.fontSizeMultiplier);
         text(

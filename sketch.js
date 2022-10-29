@@ -1,5 +1,6 @@
 const GAME_START_CODE = 0;
 const GAME_ENDED_CODE = 1;
+const GAME_RESUME_CODE = 2;
 
 const playerMaxHealth = 100;
 
@@ -28,19 +29,6 @@ const pathBackgroundColor = [0, 0, 0];
 const enemyColor = [255, 24, 103];
 const swappingAreaToggledColor = [255, 24, 103];
 
-const typesOfBlocks = [
-  {number:   2, fontSizeMultiplier:0.55, bg:[238, 228, 218], fg:[119, 110, 101], shootDelay: 6},
-  {number:   4, fontSizeMultiplier:0.55, bg:[237, 224, 200], fg:[119, 110, 101], shootDelay:12},
-  {number:   8, fontSizeMultiplier:0.55, bg:[242, 177, 121], fg:[249, 246, 242], shootDelay:18},
-  {number:  16, fontSizeMultiplier:0.50, bg:[245, 149,  99], fg:[249, 246, 242], shootDelay:24},
-  {number:  32, fontSizeMultiplier:0.50, bg:[246, 124,  95], fg:[249, 246, 242], shootDelay:30},
-  {number:  64, fontSizeMultiplier:0.50, bg:[246,  94,  59], fg:[249, 246, 242], shootDelay:36},
-  {number: 128, fontSizeMultiplier:0.45, bg:[237, 207, 114], fg:[249, 246, 242], shootDelay:42},
-  {number: 256, fontSizeMultiplier:0.45, bg:[237, 204,  97], fg:[249, 246, 242], shootDelay:48},
-  {number: 512, fontSizeMultiplier:0.45, bg:[237, 200,  80], fg:[249, 246, 242], shootDelay:54},
-  {number:1024, fontSizeMultiplier:0.40, bg:[237, 197,  63], fg:[249, 246, 242], shootDelay:60},
-  {number:2048, fontSizeMultiplier:0.40, bg:[237, 194,  46], fg:[249, 246, 242], shootDelay:66},
-];
 
 let canvasWidth, canvasHeight;
 let boardWidth, boardHeight;
@@ -78,6 +66,13 @@ function gameEnded(){
   currentInterface = new ResultUI(player);
 }
 
+function gameResume(){
+  player.pause = false;
+  player.enemyWave = null;
+  player.waiting = true;
+  currentInterface = player;
+}
+
 function draw() {
   noStroke();
   background(220);
@@ -88,6 +83,9 @@ function draw() {
       break;
     case GAME_ENDED_CODE:
       gameEnded();
+      break;
+    case GAME_RESUME_CODE:
+      gameResume();
       break;
   }
   currentInterface.draw();
@@ -121,6 +119,9 @@ function mouseReleased(event){
         break;
       case GAME_ENDED_CODE:
         gameEnded();
+        break;
+      case GAME_RESUME_CODE:
+        gameResume();
         break;
     }
   }else if(controlling.board){

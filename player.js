@@ -4,6 +4,8 @@ class Player {
     }
 
     reset(){
+        this.won = false;
+        this.pause = false;
         this.waiting = true;
 
         this.swappingArea = new SwappingArea();
@@ -31,6 +33,11 @@ class Player {
         this.addedNumber = 0;
         this.blockDamageDealt = [...Array(typesOfBlocks.length)];
 
+        this.minGoal = typesOfBlocks.reduce((a, b)=>{
+            if(a.isGoal && b.isGoal){
+                return a.number<b.number ? a:b;
+            }else return a.isGoal?a:b;
+        }).number;
         this.minNumber = this.unlocked;
         for(let type of typesOfBlocks) this.blockDamageDealt[log(type.number, this.minNumber)-1] = 0;
 
@@ -50,7 +57,8 @@ class Player {
             minNumber  : this.minNumber,
             maxNumber  : this.unlocked,
             addedNumber: this.addedNumber,
-            victory    : this.checkWon()
+            victory    : this.unlocked >= this.minGoal,
+            dead       : this.checkDead(),
         }
     }
 
@@ -65,7 +73,8 @@ class Player {
     }
 
     checkWon(){
-        return this.unlocked === typesOfBlocks.reduce((a, b)=>a.number>b.number?a:b).number;
+        this.won = this.unlocked >= this.minGoal
+        return this.won;
     }
 
     checkDead(){
@@ -89,7 +98,20 @@ class Player {
         if(rows*columns - this.blocks.length === 0) return;
         let x = sx!==undefined?sx:Math.floor(Math.random()*columns);
         let y = sy!==undefined?sy:Math.floor(Math.random()*rows);
-        let n = number!==undefined?number:(this.minNumber*((Math.floor(Math.random() * 8)===1)+1));
+
+        let n;
+        if(!number){
+            n = Math.floor(Math.random()*100);
+            let s = 0, p = 0;
+            for(let type of typesOfBlocks){
+                s += type.spawnRate;
+                if(p <= n && n <= s){
+                    n = type.number;
+                    break;
+                }else p += type.spawnRate;
+            }
+        }else n = number;
+
         if(this.empty[y][x]){
             this.blocks.push(new Block(x, y, n));
             this.empty[y][x] = false;
@@ -247,7 +269,7 @@ class Player {
     }
 
     update(){
-        if(!this.swappingArea.active && !(this.checkDead()||this.checkWon())){
+        if(!this.swappingArea.active && !this.checkDead() && !this.pause){
             if(this.movingStage === 0){
                 if(this.moveStack.length !== 0){
                     if(this.waiting){
@@ -318,7 +340,9 @@ class Player {
 
         if(this.hint && this.hint.update()) this.hint = null;
 
-        if(this.checkDead() || this.checkWon()) return GAME_ENDED_CODE;
+        if((!this.won && this.checkWon()) || this.checkDead()){
+            return GAME_ENDED_CODE;
+        }
     }
 
     draw(){

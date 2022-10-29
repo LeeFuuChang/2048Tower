@@ -7,6 +7,12 @@ class SwappingArea {
         this.minNumber = typesOfBlocks.reduce(function(a, b) {
             return a.number < b.number ? a : b;
         }).number;
+        this.displayMaxNumber = typesOfBlocks.reduce((a, b)=>{
+            if(a.isGoal && b.isGoal){
+                return a.number<b.number ? a:b;
+            }else return a.isGoal?a:b;
+        }).number;
+
         this.unlocked = this.minNumber;
         this.blockTypes = [...Array(typesOfBlocks.length)];
         for(let type of typesOfBlocks){
@@ -55,15 +61,17 @@ class SwappingArea {
 
     scroll(v){
         let padding = (blockSize/2)/(max(columns, rows)-1);
-        let typeCount = typesOfBlocks.length;
-        let maxScroll = blockSize*typeCount + padding*(typeCount+1) - canvasWidth;
+        let typeCount = log(this.displayMaxNumber, this.minNumber)-1;
+        let widthTaken = blockSize*typeCount + padding*(typeCount-1);
+        let maxScroll = widthTaken - canvasWidth+padding*2;
         this.scrollx = this.prevScrollx-v;
-        if(this.scrollx > maxScroll) this.scrollx = maxScroll;
-        else if(this.scrollx < 0) this.scrollx = 0;
+        if(this.scrollx < 0 || widthTaken <= canvasWidth-(padding*2)) this.scrollx = 0;
+        else if(this.scrollx > maxScroll) this.scrollx = maxScroll;
     }
 
     setUnlocked(unlocked){
         this.unlocked = unlocked;
+        this.displayMaxNumber = max(this.displayMaxNumber, this.unlocked);
     }
 
     pointOnSwappingArea(px, py){
@@ -90,6 +98,7 @@ class SwappingArea {
         );
 
         for(let i=0; i<this.blockTypes.length; i++){
+            if(this.blockTypes[i].number >= this.displayMaxNumber) break;
             this.blockTypes[i].pixelPos.x = -this.scrollx + (canvasWidth-areaWidth)/2 + padding*(i+1) + blockSize*i;
             this.blockTypes[i].pixelPos.y = canvasHeight - (padding + blockSize);
             this.blockTypes[i].draw(1);
@@ -108,6 +117,7 @@ class SwappingArea {
             }
         }
 
+        noStroke();
         fill(boardBackgroundColor);
         rect(
             (canvasWidth-areaWidth)/2, canvasHeight-(padding*2 + blockSize), 
@@ -137,9 +147,12 @@ class EntryUI {
         this.fakePlayer = new Player();
         this.fakePlayer.sendEnemyWave();
 
-        this.largestBlock = new Block(0, 0,
-            typesOfBlocks.reduce((a, b)=>a.number>b.number?a:b).number
-        );
+        this.minGoal = typesOfBlocks.reduce((a, b)=>{
+            if(a.isGoal && b.isGoal){
+                return a.number<b.number ? a:b;
+            }else return a.isGoal?a:b;
+        }).number;
+        this.representativeBlock = new Block(0, 0, this.minGoal);
 
         this.gameStart = false;
     }
@@ -162,8 +175,8 @@ class EntryUI {
         this.fakePlayer.enemyWave.invulnerable = true;
         this.fakePlayer.health = 100;
 
-        this.largestBlock.pixelPos.x = (canvasWidth - blockSize)/2;
-        this.largestBlock.pixelPos.y = canvasHeight/2 - blockSize;
+        this.representativeBlock.pixelPos.x = (canvasWidth - blockSize)/2;
+        this.representativeBlock.pixelPos.y = canvasHeight/2 - blockSize;
     }
 
     draw(){
@@ -172,7 +185,7 @@ class EntryUI {
         fill(0, 0, 0, 127);
         rect(0, 0, canvasWidth, canvasHeight);
 
-        this.largestBlock.draw(3, [60, 60, 60, 120, 4, 8]);
+        this.representativeBlock.draw(3, [60, 60, 60, 120, 4, 8]);
 
         // start button
         fill([60, 60, 60, 120]);
@@ -209,6 +222,7 @@ class ResultUI {
         this.bestBlock = new Block(0, 0, Math.pow(this.data.minNumber, this.bestBlockIndex+1));
         this.fakePlayer = player;
         this.gameStart = false;
+        this.fakePlayer.pause = true;
     }
 
     pressedAt(mx, my){
@@ -222,7 +236,7 @@ class ResultUI {
             nextGameButtonX <= my && nextGameButtonY <= my &&
             nextGameButtonX + nextGameButtonW >= mx &&
             nextGameButtonY + nextGameButtonH >= my
-        ) return GAME_START_CODE;
+        ) return this.data.dead?GAME_START_CODE:GAME_RESUME_CODE;
     }
 
     update(){}
@@ -341,7 +355,7 @@ class ResultUI {
         textAlign(CENTER, CENTER);
         fill([255, 255, 255]);
         text(
-            "再來一局", 
+            this.data.dead?"再來一局":"繼續突破", 
             (canvasWidth-cardWidth/3*2)/2 + cardWidth/3,
             (canvasHeight*1.5 + cardHeight*0.5 + weight*1.5 - cardHeight/6)/2 + cardHeight/12
         );
