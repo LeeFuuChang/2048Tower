@@ -41,8 +41,9 @@ let controlling = {
 }
 
 function setup() {
-  columns = (urlParameters.has("col")&&!isNaN(urlParameters.get("col")))?parseInt(urlParameters.get("col")):4;
-  rows = (urlParameters.has("row")&&!isNaN(urlParameters.get("row")))?parseInt(urlParameters.get("row")):4;
+  let paramCol = urlParameters.get("col"), paramRow = urlParameters.get("row");
+  columns = (paramCol && !isNaN(paramCol) && parseInt(paramCol) >= 4) ? parseInt(paramCol):4;
+  rows = (paramRow && !isNaN(paramRow) && parseInt(paramRow) >= 4) ? parseInt(paramRow):4;
 
   blockSize = min((windowWidth/2)/columns, (windowHeight/2)/rows);
   enemySize = blockSize/3;
