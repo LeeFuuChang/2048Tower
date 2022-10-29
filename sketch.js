@@ -2,6 +2,8 @@ const GAME_START_CODE = 0;
 const GAME_ENDED_CODE = 1;
 const GAME_RESUME_CODE = 2;
 
+const urlParameters = new URLSearchParams(window.location.search);
+
 const playerMaxHealth = 100;
 
 const miniumSwipeDistance = 20;
@@ -32,15 +34,15 @@ const swappingAreaToggledColor = [255, 24, 103];
 
 let canvasWidth, canvasHeight;
 let boardWidth, boardHeight;
-let blockSize, enemySize, columns, rows, player, currentInterface={update:()=>{}, draw:()=>{}};
+let blockSize, enemySize, columns, rows, player, base, currentInterface;
 let controlling = {
   board: false, swappingArea: false,
   initialX: -1, initialY: -1
 }
 
 function setup() {
-  columns = 4;
-  rows = 4;
+  columns = (urlParameters.has("col")&&!isNaN(urlParameters.get("col")))?parseInt(urlParameters.get("col")):4;
+  rows = (urlParameters.has("row")&&!isNaN(urlParameters.get("row")))?parseInt(urlParameters.get("row")):4;
 
   blockSize = min((windowWidth/2)/columns, (windowHeight/2)/rows);
   enemySize = blockSize/3;
